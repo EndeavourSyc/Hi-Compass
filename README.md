@@ -27,6 +27,10 @@ Hi-Compass depends on the following Python packages:
 
 These dependencies (except for PyTorch) will be automatically installed when using pip.
 
+### Source data 
+https://zenodo.org/records/15037064
+Including basic model weight and other constant input data. A demo GM12878 ATAC-seq bw file with depth=840000 is also included.
+
 ## Usage
 
 ### Command Line Interface
