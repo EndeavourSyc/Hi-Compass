@@ -1,0 +1,4 @@
+"""
+Hi-Compass commands
+"""
+
