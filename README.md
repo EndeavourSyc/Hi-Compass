@@ -38,7 +38,7 @@ Including basic model weight and other constant input data. A demo GM12878 ATAC-
 After installation, you can use the `hicompass` command:
 
 ```bash
-hicompass predict --cell_type CELL_TYPE --atac_path PATH_TO_ATAC_BW_FILE --ctcf_path PATH_TO_CTCF_BW_FILE --dna_dir_path PATH_TO_DNA_DIR --model_path PATH_TO_MODEL
+hicompass predict --cell_type CELL_TYPE --atac_path PATH_TO_ATAC_BW_FILE --ctcf_path PATH_TO_CTCF_BW_FILE --dna_dir_path PATH_TO_DNA_DIR --omit_regions_path OMIT_REGIONS_PATH --model_path PATH_TO_MODEL
 ```
 
 #### predict subcommand parameters
