@@ -69,14 +69,21 @@ You can also use Hi-Compass in Python scripts:
 ```python
 from hicompass.models import ConvTransModel
 from hicompass.chromosome_dataset import ChromosomeDataset
-from hicompass.utils import merge_hic_segment
+from hicompass.utils import merge_hic_segment, pseudo_weight
+
+# Data source
+atac_path = '/path/to/atac.bw'
+chr_name_list = ['chr1', 'chr2']
+dna_dir_path = '/path/to/dna_sequences_dir/'
+ctcf_path = '/path/to/ctcf.bw'
+save_path = '/path/to/save_cooler.cool'
 
 # Create dataset
 dataset = ChromosomeDataset(
-    chr_name_list=['chr1', 'chr2'],
-    atac_path_list=['/path/to/atac.bw'],
-    dna_dir_path='/path/to/dna/sequences',
-    general_ctcf_bw_path='/path/to/ctcf.bw',
+    chr_name_list=chr_name_list,
+    atac_path_list=[atac_path],
+    dna_dir_path=dna_dir_path,
+    general_ctcf_bw_path=ctcf_path,
     stride=50,
     depth=800000
 )
@@ -85,8 +92,62 @@ dataset = ChromosomeDataset(
 model = ConvTransModel()
 model.load_state_dict(torch.load('/path/to/model.pth'))
 
-# Further processing...
-```
+    # Create dataset
+    print(f"Creating dataset with ATAC-seq data from {args.atac_path}")
+    start_time = time.time()
+    dataset = ChromosomeDataset(
+        chr_name_list=chr_list,
+        atac_path_list=[args.atac_path],
+        dna_dir_path=args.dna_dir_path,
+        general_ctcf_bw_path=args.ctcf_path,
+        stride=args.stride,
+        depth=args.depth,
+        use_aug=False
+    )
+
+    # Create dataloader
+    dataloader = DataLoader(
+        dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers
+    )
+
+    # Initialize output dictionary
+    output_dict = {chr_name: [] for chr_name in chr_list}
+
+    # Run prediction
+    with torch.no_grad():
+        for step, data in enumerate(dataloader):
+            seq, atac, real_depth, ctcf, start, start_ratio, end, end_ratio, chr_name, chr_name_ratio = data
+            mat_pred, pred_cls, _ = model(
+                seq.to(device),
+                atac.to(device),
+                real_depth.to(device),
+                ctcf.to(device),
+                start_ratio.to(device),
+                end_ratio.to(device),
+                chr_name_ratio.to(device)
+            )
+
+            # Process results
+            for i in range(seq.shape[0]):
+                result = mat_pred[i].cpu().detach().numpy()
+                result = np.clip(result, a_max=10, a_min=0) * 10
+                result = np.triu(result)
+                np.fill_diagonal(result, 0)
+                output_dict[str(chr_name[i])].append([start[i].cpu(), end[i].cpu(), result])
+
+    # Merge segments and save
+    merge_hic_segment(
+        output_dict,
+        save_path=save_path,
+        window_size=2097152,
+        resolution=10000
+    )
+
+    # Add pseudo weight
+    pseudo_weight(save_path, save_path, weight=1)
 
 ## Examples
 
