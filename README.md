@@ -148,6 +148,7 @@ model.load_state_dict(torch.load('/path/to/model.pth'))
 
     # Add pseudo weight
     pseudo_weight(save_path, save_path, weight=1)
+```
 
 ## Examples
 
