@@ -97,9 +97,9 @@ model.load_state_dict(torch.load('/path/to/model.pth'))
     # Create dataloader
     dataloader = DataLoader(
         dataset,
-        batch_size=args.batch_size,
+        batch_size=16,
         shuffle=False,
-        num_workers=args.num_workers
+        num_workers=4
     )
 
     # Initialize output dictionary
