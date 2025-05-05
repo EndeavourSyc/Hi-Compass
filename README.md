@@ -6,7 +6,7 @@ Hi-Compass is a tool for predicting chromatin interactions (Hi-C matrices) from 
 
 ### Prerequisites
 
-**Important Note**: Hi-Compass requires PyTorch (version >= 1.13.1), but does not install it automatically since PyTorch installation methods vary depending on your system, CUDA version, and hardware. Please install PyTorch manually following the instructions at [pytorch.org](https://pytorch.org/get-started/locally/) before installing Hi-Compass.
+**Important Note**: Hi-Compass requires PyTorch (version >= 1.13.1), but does not install it automatically since PyTorch installation methods vary depending on your system, CUDA version, and hardware. Please install PyTorch manually following the instructions at [pytorch.org](https://pytorch.org/get-started/locally/) before using Hi-Compass.
 
 ### Installing via pip (recommended)
 
