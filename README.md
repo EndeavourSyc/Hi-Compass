@@ -78,16 +78,6 @@ dna_dir_path = '/path/to/dna_sequences_dir/'
 ctcf_path = '/path/to/ctcf.bw'
 save_path = '/path/to/save_cooler.cool'
 
-# Create dataset
-dataset = ChromosomeDataset(
-    chr_name_list=chr_name_list,
-    atac_path_list=[atac_path],
-    dna_dir_path=dna_dir_path,
-    general_ctcf_bw_path=ctcf_path,
-    stride=50,
-    depth=800000
-)
-
 # Load model
 model = ConvTransModel()
 model.load_state_dict(torch.load('/path/to/model.pth'))
@@ -96,13 +86,12 @@ model.load_state_dict(torch.load('/path/to/model.pth'))
     print(f"Creating dataset with ATAC-seq data from {args.atac_path}")
     start_time = time.time()
     dataset = ChromosomeDataset(
-        chr_name_list=chr_list,
-        atac_path_list=[args.atac_path],
-        dna_dir_path=args.dna_dir_path,
-        general_ctcf_bw_path=args.ctcf_path,
-        stride=args.stride,
-        depth=args.depth,
-        use_aug=False
+        chr_name_list=chr_name_list,
+        atac_path_list=[atac_path],
+        dna_dir_path=dna_dir_path,
+        general_ctcf_bw_path=ctcf_path,
+        stride=50,
+        depth=800000
     )
 
     # Create dataloader
