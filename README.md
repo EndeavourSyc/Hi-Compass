@@ -95,6 +95,7 @@ Process a specific cell type with required parameters:
 ```bash
 hicompass predict --cell_type gm12878 \
                   --atac_path /path/to/gm12878_ATAC.bw \
+                  --omit_regions_path /path/to/omit_region_file
                   --ctcf_path /path/to/ctcf.bw \
                   --dna_dir_path /path/to/dna/sequences \
                   --model_path /path/to/model.pth
@@ -105,10 +106,12 @@ Process only chromosomes 1, 3, and 5:
 ```bash
 hicompass predict --cell_type gm12878 \
                   --atac_path /path/to/gm12878_ATAC.bw \
+                  --omit_regions_path /path/to/omit_region_file
                   --ctcf_path /path/to/ctcf.bw \
                   --dna_dir_path /path/to/dna/sequences \
                   --model_path /path/to/model.pth \
                   --chromosomes 1,3,5
+                    
 ```
 
 Specify a custom output path and use GPU:
@@ -116,6 +119,7 @@ Specify a custom output path and use GPU:
 ```bash
 hicompass predict --cell_type gm12878 \
                   --atac_path /path/to/gm12878_ATAC.bw \
+                  --omit_regions_path /path/to/omit_region_file
                   --ctcf_path /path/to/ctcf.bw \
                   --dna_dir_path /path/to/dna/sequences \
                   --model_path /path/to/model.pth \
