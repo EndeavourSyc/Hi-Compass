@@ -49,6 +49,7 @@ Required parameters:
 - `--ctcf_path`: Path to the general CTCF ChIP-seq .bw file
 - `--dna_dir_path`: Path to the DNA sequence fa.gz directory
 - `--model_path`: Path to the model weights file
+- `--omit_regions_path`: Path to the chromosome omit regions file. This file should be a three-column CSV file with tab ('\t') as the separator. The three columns represent chromosome, start, and end positions, respectively.
 
 Optional parameters:
 - `--output_path`: Output directory path (default: ./output/<cell_type>)
