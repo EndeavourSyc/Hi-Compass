@@ -151,7 +151,7 @@ hicompass predict --cell_type gm12878 \
                   --dna_dir_path /path/to/dna/sequences \
                   --model_path /path/to/model.pth \
                   --chromosomes 1,3,5 \
-                  --depth 820000 \
+                  --depth 840000 \
                   --device cuda:0
 ```
 
