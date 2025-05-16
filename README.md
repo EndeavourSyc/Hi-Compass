@@ -161,7 +161,7 @@ This file can be visualized using tools like Juicebox, HiCExplorer or just matpl
 
 ## Advanced tutorial
 
-An advanced Hi-Compass usage example demonstrating a de novo scATAC-seq-based prediction and further analysis workflow: from performing meta cell Hi-C prediction to clustering results, loop calling, and loop annotation. The complete tutorial is available at http://wulab.bjmu.edu.cn/hicompass. 
+An advanced Hi-Compass usage example demonstrating a de novo scATAC-seq-based prediction and further analysis workflow - from performing meta cell Hi-C prediction to clustering results, loop calling, and loop annotation - is available at http://wulab.bjmu.edu.cn/hicompass. 
 
 ## License
 
