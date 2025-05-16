@@ -183,6 +183,9 @@ hicompass predict --cell_type gm12878 \
 The tool generates a .cool file containing the predicted Hi-C matrix for the specified cell type.
 This file can be visualized using tools like Juicebox, HiCExplorer or just matplotlib.pyplot.imshow.
 
+## Advanced tutorial
+
+An advanced Hi-Compass usage example demonstrating a de novo scATAC-seq-based prediction and further analysis workflow: from performing meta cell Hi-C prediction to clustering results, loop calling, and loop annotation. The complete tutorial is available at http://wulab.bjmu.edu.cn/hicompass. 
 
 ## License
 
