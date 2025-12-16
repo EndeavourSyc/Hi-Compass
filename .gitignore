@@ -2,7 +2,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
 
 # Distribution / packaging
 build/
@@ -13,7 +12,6 @@ dist/
 # Virtual environments
 venv/
 .venv/
-env/
 
 # IDE
 .idea/
