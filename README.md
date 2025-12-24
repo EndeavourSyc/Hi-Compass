@@ -1,7 +1,16 @@
 # Hi-Compass
 
 Hi-Compass is a depth-aware multi-modal deep learning framework for predicting cell-type-specific chromatin interactions from ATAC-seq data.
-
+## Table of Contents
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Training Data Preparation](#training-data-preparation)
+- [Preprocessing](#preprocessing)
+- [Training](#training)
+- [Prediction](#prediction)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
+- [Contact](#contact)
 ## Overview
 
 Three-dimensional genome organization controls cell-type-specific gene expression through chromatin interactions. Hi-Compass addresses the challenge of predicting 3D genome structure from chromatin accessibility data by integrating four key inputs:
@@ -29,7 +38,6 @@ The model incorporates a depth-aware module that dynamically accommodates sequen
   Please install PyTorch first following the instructions at [pytorch.org](https://pytorch.org/get-started/locally/).
 
   ### Step 2: Install Hi-Compass
-
   ```bash
   pip install hicompass
   ```
@@ -37,15 +45,14 @@ The model incorporates a depth-aware module that dynamically accommodates sequen
   ### Step 3: Install training dependencies (for training only)
 
   If you plan to train your own models, please install the [PyTorch Lightning](https://lightning.ai/) with version that match your torch.
-
   ### Step 4: Install preprocessing tools (for preprocessing only)
 
   The preprocessing commands require the following external tools:
-
   ```bash
   # Using conda
   conda install -c bioconda samtools bedtools ucsc-bedgraphtobigwig
   ```
+
 
 
 ## Training Data Preparation
@@ -54,27 +61,40 @@ Training Required Data
 
 Hi-Compass requires the following input data:
 
-| Data Type          | User Provided       | Pre-built Available | Description                                                  |
-| ------------------ | ------------------- | ------------------- | ------------------------------------------------------------ |
-| ATAC-seq           | Yes                 | -                   | Cell-type-specific BAM file (for training) or BigWig file (for prediction) |
-| Hi-C               | Yes (training only) | -                   | 10 kb resolution .cool file                                  |
-| DNA sequence       | No                  | hg38, mm10          | One-hot encoded sequences per chromosome                     |
-| Generalized CTCF   | No                  | hg38, mm10          | Pan-tissue CTCF binding profile                              |
-| Chromosome sizes   | No                  | hg38, mm10          | Chromosome size file                                         |
-| Centromere regions | No                  | hg38, mm10          | BED file for filtering (optional)                            |
+| Data Type | User Provided | Pre-built Available | Description |
+|-----------|---------------|---------------------|-------------|
+| ATAC-seq | Yes | - | Cell-type-specific BAM file (for training) or BigWig file (for prediction) |
+| Hi-C | Yes (training only) | - | 10 kb resolution .cool file |
+| DNA sequence | No | hg38, mm10 | One-hot encoded sequences per chromosome |
+| Generalized CTCF | No | hg38, mm10 | Pan-tissue CTCF binding profile |
+| Chromosome sizes | No | hg38, mm10 | Chromosome size file |
+| Centromere regions | No | hg38, mm10 | BED file for filtering (optional) |
 
 ### Download Pre-built Reference Data
 
-Pre-built reference data for human (hg38) and mouse (mm10) are available at:
+Pre-built reference data for human (hg38) are available for download:
 
-[ZENODO_LINK]
+#### Required for Prediction
+
+| File               | Description                                  | Download                                                     |
+| ------------------ | -------------------------------------------- | ------------------------------------------------------------ |
+| DNA sequences      | One-hot encoded DNA sequences per chromosome | [DNA.zip](https://wulab.bjmu.edu.cn/hicompass_download/DNA.zip) |
+| Generalized CTCF   | Pan-tissue CTCF binding profile              | [CTCF.zip](https://wulab.bjmu.edu.cn/hicompass_download/CTCF.zip) |
+| Model weights      | Pre-trained Hi-Compass model                 | [model_weights.zip](https://wulab.bjmu.edu.cn/hicompass_download/model_weights.zip) |
+| Centromere regions | BED file for filtering (optional)            | [centromere.zip](https://wulab.bjmu.edu.cn/hicompass_download/centromere.zip) |
+
+#### Required for Training Only
+
+| File         | Description                                 | Download                                                     |
+| ------------ | ------------------------------------------- | ------------------------------------------------------------ |
+| ATAC-seq BAM | Example bulk ATAC-seq data (GM12878, IMR90) | [IMR90_GM12878_ATAC_bam.zip](https://wulab.bjmu.edu.cn/hicompass_download/IMR90_GM12878_ATAC_bam.zip) |
+| Hi-C cool    | Example Hi-C matrices (GM12878, IMR90)      | [IMR90_GM12878_HiC_cool.zip](https://wulab.bjmu.edu.cn/hicompass_download/IMR90_GM12878_HiC_cool.zip) |
 
 Download and organize the files according to the directory structure below.
 
 ### Directory Structure
 
 Hi-Compass expects data organized in the following structure for training (take hg38 as example):
-
 ```
 /home/user/hicompass_data/
 ├── ATAC/
@@ -109,13 +129,11 @@ Hi-Compass expects data organized in the following structure for training (take 
 ```
 
 ATAC-seq BigWig files follow the naming convention:
-
 ```
 {CellType}~ATAC~{Depth}.bw
 ```
 
 Examples:
-
 - `GM12878~ATAC~bulk.bw` - Bulk ATAC-seq (full depth)
 - `GM12878~ATAC~1e6.bw` - Subsampled to 1,000,000 reads
 - `GM12878~ATAC~5e5.bw` - Subsampled to 500,000 reads
@@ -131,7 +149,6 @@ Hi-Compass provides preprocessing commands to prepare your data for training.
 ### ATAC-seq Preprocessing
 
 Convert bulk ATAC-seq BAM files to multi-depth BigWig files through stratified subsampling:
-
 ```bash
 hicompass preprocess-atac \
     --input GM12878_bulk_ATAC.bam \
@@ -144,23 +161,22 @@ This command generates BigWig files at multiple sequencing depths, enabling the 
 
 #### Parameters
 
-| Parameter             | Required | Default | Description                                  |
-| --------------------- | -------- | ------- | -------------------------------------------- |
-| `--input`, `-i`       | Yes      | -       | Input BAM/SAM file                           |
-| `--cell-type`, `-c`   | Yes      | -       | Cell type name (used in output filenames)    |
-| `--output`, `-o`      | Yes      | -       | Output directory                             |
-| `--chrom-sizes`, `-s` | Yes      | -       | Chromosome sizes file                        |
-| `--depths`, `-d`      | No       | -       | Custom depths (comma-separated or @file.txt) |
-| `--min-depth`         | No       | 2e5     | Minimum depth for range mode                 |
-| `--max-depth`         | No       | 2e7     | Maximum depth for range mode                 |
-| `--step`              | No       | 2e4     | Step size for range mode                     |
-| `--no-bulk`           | No       | False   | Skip bulk BigWig generation                  |
-| `--seed`              | No       | 42      | Random seed for reproducibility              |
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `--input`, `-i` | Yes | - | Input BAM/SAM file |
+| `--cell-type`, `-c` | Yes | - | Cell type name (used in output filenames) |
+| `--output`, `-o` | Yes | - | Output directory |
+| `--chrom-sizes`, `-s` | Yes | - | Chromosome sizes file |
+| `--depths`, `-d` | No | - | Custom depths (comma-separated or @file.txt) |
+| `--min-depth` | No | 2e5 | Minimum depth for range mode |
+| `--max-depth` | No | 2e7 | Maximum depth for range mode |
+| `--step` | No | 2e4 | Step size for range mode |
+| `--no-bulk` | No | False | Skip bulk BigWig generation |
+| `--seed` | No | 42 | Random seed for reproducibility |
 
 #### Output
 
 The command generates BigWig files following the naming convention `{CellType}~ATAC~{Depth}.bw`:
-
 ```
 data/ATAC/hg38/
 ├── GM12878~ATAC~bulk.bw
@@ -177,7 +193,6 @@ Hi-C preprocessing consists of two steps:
 #### Step 1: Contrast Stretching Normalization
 
 Apply contrast stretching to enhance Hi-C matrix features:
-
 ```bash
 hicompass preprocess-hic-norm \
     --input GM12878_raw.cool \
@@ -185,36 +200,34 @@ hicompass preprocess-hic-norm \
     --genome hg38
 ```
 
-| Parameter             | Required | Default | Description                              |
-| --------------------- | -------- | ------- | ---------------------------------------- |
-| `--input`, `-i`       | Yes      | -       | Input cool file                          |
-| `--output`, `-o`      | Yes      | -       | Output cool file                         |
-| `--genome`, `-g`      | No       | hg38    | Genome assembly (hg38, mm10, or custom)  |
-| `--chrom-sizes`, `-s` | No       | -       | Required when --genome=custom            |
-| `--resolution`, `-r`  | No       | 10000   | Resolution in bp (10 kb recommended)     |
-| `--percentile-max`    | No       | 98.0    | Upper percentile for contrast stretching |
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `--input`, `-i` | Yes | - | Input cool file |
+| `--output`, `-o` | Yes | - | Output cool file |
+| `--genome`, `-g` | No | hg38 | Genome assembly (hg38, mm10, or custom) |
+| `--chrom-sizes`, `-s` | No | - | Required when --genome=custom |
+| `--resolution`, `-r` | No | 10000 | Resolution in bp (10 kb recommended) |
+| `--percentile-max` | No | 98.0 | Upper percentile for contrast stretching |
 
 Note: Only 10 kb resolution is currently supported. A warning will be issued for other resolutions.
 
 #### Step 2: Convert to NPZ Format
 
 Convert the normalized cool file to NPZ format for training:
-
 ```bash
 hicompass preprocess-hic-to-npz \
     --input GM12878_normalized.cool \
     --output data/HiC/hg38/GM12878
 ```
 
-| Parameter            | Required | Default | Description                    |
-| -------------------- | -------- | ------- | ------------------------------ |
-| `--input`, `-i`      | Yes      | -       | Input cool file (from step 1)  |
-| `--output`, `-o`     | Yes      | -       | Output directory for NPZ files |
-| `--resolution`, `-r` | No       | 10000   | Resolution in bp               |
-| `--window`, `-w`     | No       | 256     | Number of diagonals to extract |
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `--input`, `-i` | Yes | - | Input cool file (from step 1) |
+| `--output`, `-o` | Yes | - | Output directory for NPZ files |
+| `--resolution`, `-r` | No | 10000 | Resolution in bp |
+| `--window`, `-w` | No | 256 | Number of diagonals to extract |
 
 #### Output
-
 ```
 data/HiC/hg38/GM12878/
 ├── chr1.npz
@@ -228,7 +241,6 @@ data/HiC/hg38/GM12878/
 DNA sequences should be provided as gzipped FASTA files per chromosome.
 
 If you have a whole-genome FASTA file, split it using:
-
 ```bash
 # Index the genome
 samtools faidx hg38.fa
@@ -240,7 +252,6 @@ done
 ```
 
 Expected structure:
-
 ```
 DNA/hg38/
 ├── chr1.fa.gz
@@ -262,7 +273,6 @@ For species other than human (hg38) and mouse (mm10), you need to generate your 
 2. Ensure all BED files use the same genome assembly
 
 #### Processing Steps
-
 ```bash
 # Step 1: List all CTCF peak BED files
 ls /path/to/ctcf_peaks/*.bed > peak_files.txt
@@ -287,12 +297,10 @@ bedGraphToBigWig ctcf_sorted.bedGraph your_genome.chrom.sizes CTCF.bw
 #### Output
 
 The resulting `CTCF.bw` file contains binding probability scores ranging from 0 to 1:
-
 - **0**: No CTCF binding observed in any sample
 - **1**: CTCF binding observed in all samples
 
 Place this file in your data directory:
-
 ```
 /your/data_root/CTCF/{genome}/CTCF.bw
 ```
@@ -302,7 +310,6 @@ Place this file in your data directory:
 ### Complete Data Structure Example
 
 Before training, ensure your data is organized as follows. Here we use `/home/user/hicompass_data` as an example data root, 
-
 ```
 /home/user/hicompass_data/
 ├── ATAC/
@@ -387,7 +394,6 @@ For genomes other than hg38 and mm10:
 1. Prepare chromosome sizes file at `{data-root}/chromsize/custom_genome_name/custom_genome_name.chrom.sizes`
 2. Prepare generalized CTCF BigWig at `{data-root}/CTCF/custom_genome_name/generalized_CTCF.bw`
 3. Specify `--genome custom_genome_name`
-
 ```bash
 hicompass training \
     --data-root /home/user/hicompass_data \
@@ -417,19 +423,20 @@ For prediction, you need the following files (can be placed anywhere):
 ### Calculating ATAC-seq Depth
 
 Before prediction, you need to know the sequencing depth of your ATAC-seq data. The depth is the total number of mapped reads.
-
 ```bash
 # From BAM file
 samtools view -c your_sample.bam
 ```
 
-### Prediction
+### Prediction with Example Data
+
+We provide a pre-processed K562 ATAC-seq BigWig file with known sequencing depth [here](https://wulab.bjmu.edu.cn/hicompass_download/k562~ATAC~8e5.bw)  for demonstration:
 
 ```bash
 hicompass predicting \
 		--genome hg38 \
     --model-path /path/to/hicompass_hg38.pth \
-    --atac-path /path/tohg38//my_sample_ATAC.bw \
+    --atac-path /path/to/hg38/k562~ATAC~8e5.bw \
     --ctcf-path /path/to/hg38/generalized_CTCF.bw \
     --dna-dir /path/to/DNA/hg38 \
     --output /path/to/output/my_sample_predicted.cool \
@@ -438,8 +445,6 @@ hicompass predicting \
     --chromosomes 1-22 \
     --device cuda:0
 ```
-
-
 
 ### Prediction Parameters
 
@@ -463,7 +468,6 @@ hicompass predicting \
 ### Output Format
 
 The output is a **.cool file** with balanced weights, compatible with downstream analysis tools:
-
 ```python
 import cooler
 
@@ -476,6 +480,18 @@ import cooltools
 # Calculate insulation score
 insulation = cooltools.insulation(clr, window_bp=100000)
 ```
+
+### Advanced Tutorial
+
+This README covers basic usage of Hi-Compass. For advanced applications including single-cell analysis and downstream analyses, please refer to our [Advanced Tutorial](https://github.com/EndeavourSyc/Hi-Compass/blob/main/hicompass/doc/Advanced_Tutorial.md).
+
+The advanced tutorial covers:
+
+1. **Meta-cell Hi-C Prediction** - Aggregate single-cell ATAC-seq into meta-cells and predict mcHi-C for each cell type
+2. **mcHi-C Clustering** - Perform dimensionality reduction and clustering on predicted mcHi-C matrices
+3. **Loop Detection** - Call chromatin loops and differential loops using Mustache
+4. **Promoter-Enhancer Annotation** - Annotate detected loops as potential promoter-enhancer interactions
+5. **GWAS Variant Annotation** - Link GWAS variants to target genes by identifying loops with both anchors overlapping GWAS-associated regions
 
 ## Acknowledgments
 
