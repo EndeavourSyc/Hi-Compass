@@ -96,7 +96,7 @@ def init_training(args):
         devices = args.gpu_id
     else:
         strategy = 'auto'
-        devices = args.gpu_id[0]
+        devices = args.gpu_id
     
     pl_trainer = pl.Trainer(
         strategy=strategy,
