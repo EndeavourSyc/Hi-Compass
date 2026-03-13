@@ -169,7 +169,6 @@ class PredictDataset(Dataset):
         ctcf = self.ctcf_feature.get(chr_name, start, end)
         
         real_depth = int(self.depth)
-        real_depth = min(len(ctcf), real_depth)
         
         return seq, atac, real_depth, ctcf, start, end, chr_name
 
