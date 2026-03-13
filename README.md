@@ -42,11 +42,13 @@ The model incorporates a depth-aware module that dynamically accommodates sequen
   pip install hicompass
   ```
 
-  ### Step 3: Install training dependencies (for training only)
+  Typical installation time: ~5 minutes on a standard desktop computer.
 
+  ### Step 3: Install training dependencies (for training only)
+  
   If you plan to train your own models, please install the [PyTorch Lightning](https://lightning.ai/) with version that match your torch.
   ### Step 4: Install preprocessing tools (for preprocessing only)
-
+  
   The preprocessing commands require the following external tools:
   ```bash
   # Using conda
