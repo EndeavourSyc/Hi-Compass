@@ -111,6 +111,37 @@ def load_chrom_sizes(chrom_sizes_file: Union[str, Path]) -> Dict[str, int]:
         raise ValueError(f"Failed to parse chromosome sizes file: {e}")
 
 
+def band_percentiles(
+    matrix: np.ndarray,
+    resolution: int,
+    band_bp: float,
+    p_lo: float,
+    p_hi: float
+) -> tuple:
+    """
+    Compute (p_lo, p_hi) percentiles over pixels within genomic distance (0, band_bp].
+
+    `matrix` must still contain NaN for bins with invalid (NaN) balance weight —
+    call this before np.nan_to_num, so those bins are excluded rather than
+    counted as zeros. Zero-valued pixels from valid bins are kept, per
+    METHOD_FIX_contrast_stretch.md §3.2.
+    """
+    n = matrix.shape[0]
+    band_bins = min(int(band_bp // resolution), n - 1) if n > 1 else 0
+    if band_bins < 1:
+        return np.nan, np.nan
+
+    values = np.concatenate([
+        np.diagonal(matrix, offset=d) for d in range(1, band_bins + 1)
+    ])
+    values = values[~np.isnan(values)]
+    if values.size == 0:
+        return np.nan, np.nan
+
+    lo, hi = np.percentile(values, (p_lo, p_hi))
+    return float(lo), float(hi)
+
+
 def extract_chrom_sizes_from_cool(cool_file: Union[str, Path]) -> Dict[str, int]:
     """
     Extract chromosome sizes directly from a cool file.
@@ -151,8 +182,10 @@ class HiCNormalizer:
         resolution: int = 10000,
         genome: str = 'hg38',
         chrom_sizes: Optional[Union[Dict[str, int], str, Path]] = None,
+        percentile_method: str = 'band',
+        band_bp: float = 2_500_000,
         percentile_min: float = 2.0,
-        percentile_max: float = 98.0,
+        percentile_max: float = 99.0,
         sample_region_start: int = 4000,
         sample_region_size: int = 256,
         balance: bool = True,
@@ -162,7 +195,7 @@ class HiCNormalizer:
     ):
         """
         Initialize Hi-C normalizer.
-        
+
         Args:
             input_cool: Input cool file path
             output_cool: Output cool file path (contrast-stretched)
@@ -172,25 +205,41 @@ class HiCNormalizer:
                 - Dict[str, int]: chromosome name -> size
                 - str/Path: path to chrom.sizes file or cool file
                 - None: uses genome default or extracts from input_cool
+            percentile_method: How to determine the contrast-stretch interval.
+                - 'band' (default): percentiles over pixels within genomic
+                  distance (0, band_bp] on each chromosome, excluding bins with
+                  NaN balance weight. Resolution-independent and immune to the
+                  centromere-gap zeroing bug of 'window'. See
+                  METHOD_FIX_contrast_stretch.md.
+                - 'window': legacy v1 behavior using a fixed bin window
+                  (sample_region_start/sample_region_size). Kept only for
+                  reproducing old results; known to zero out some chromosomes.
+            band_bp: Genomic distance band size in bp, used when
+                percentile_method='band' (default: 2,500,000)
             percentile_min: Lower percentile for contrast stretching (default: 2.0)
-            percentile_max: Upper percentile for contrast stretching (default: 98.0)
-            sample_region_start: Start bin for sampling percentiles (default: 4000)
-            sample_region_size: Size of sample region in bins (default: 256)
+            percentile_max: Upper percentile for contrast stretching (default: 99.0;
+                use 98.0 to reproduce v1 'window' behavior)
+            sample_region_start: Start bin for sampling percentiles. Deprecated;
+                only used when percentile_method='window' (default: 4000)
+            sample_region_size: Size of sample region in bins. Deprecated; only
+                used when percentile_method='window' (default: 256)
             balance: Use balanced matrix (default: True)
             chr_list: List of chromosomes to process. If None, uses all chromosomes
             target_scale: Target scale after normalization (default: 100.0)
             force_resolution: Skip resolution check warning (default: False)
-            
-        Note:
-            The sample_region (start=4000, size=256) was empirically determined
-            to work well for 98% of Hi-C datasets at 10kb resolution for both
-            human and mouse genomes. These parameters are exposed for flexibility
-            but the defaults are strongly recommended.
         """
+        if percentile_method not in ('band', 'window'):
+            raise ValueError(
+                f"Unknown percentile_method: {percentile_method!r}. "
+                f"Use 'band' (default) or 'window' (legacy, for reproducing v1 results)."
+            )
+
         self.input_cool = Path(input_cool)
         self.output_cool = Path(output_cool)
         self.resolution = resolution
         self.balance = balance
+        self.percentile_method = percentile_method
+        self.band_bp = band_bp
         self.percentile_min = percentile_min
         self.percentile_max = percentile_max
         self.sample_region_start = sample_region_start
@@ -341,6 +390,45 @@ class HiCNormalizer:
         return pd.DataFrame(total_bin, columns=['chrom', 'start', 'end'])
     
     @staticmethod
+    def _stretch_chromosome(
+        matrix: np.ndarray,
+        lo: float,
+        hi: float,
+        p_lo: float,
+        p_hi: float,
+        target_scale: float,
+        chr_name: str = ""
+    ) -> np.ndarray:
+        """
+        Contrast-stretch with degeneration guards (see
+        METHOD_FIX_contrast_stretch.md §3.3). Falls back to a percentile
+        computed on the chromosome's own nonzero values, then to binarization,
+        rather than letting `exposure.rescale_intensity` collapse the whole
+        chromosome to a constant.
+        """
+        def _ok(a, b):
+            return (a is not None and b is not None
+                    and np.isfinite(a) and np.isfinite(b) and b > a)
+
+        if not _ok(lo, hi):
+            nz = matrix[matrix > 0]
+            if nz.size == 0:
+                logger.warning(f"{chr_name}: no signal in matrix, output will be empty")
+                return np.zeros_like(matrix)
+
+            lo, hi = np.percentile(nz, (p_lo, p_hi))
+            if not _ok(lo, hi):
+                lo, hi = 0.0, float(nz.max())
+            if not _ok(lo, hi):
+                logger.warning(
+                    f"{chr_name}: degenerate percentiles even after fallback, "
+                    f"binarizing instead of stretching"
+                )
+                return (matrix > 0).astype(matrix.dtype) * target_scale
+
+        return exposure.rescale_intensity(matrix, in_range=(lo, hi)) * target_scale
+
+    @staticmethod
     def _pseudo_weight(cool_path: Path, weight: float = 1.0):
         """Add pseudo weight column to cool file."""
         cooler_obj = cooler.Cooler(str(cool_path))
@@ -380,61 +468,86 @@ class HiCNormalizer:
         np.fill_diagonal(matrix, 0)
         np.fill_diagonal(matrix[1:, :], 0)
         np.fill_diagonal(matrix[:, 1:], 0)
-        
-        # Clip and clean
         matrix = np.clip(matrix, a_min=0, a_max=None)
-        matrix = np.nan_to_num(matrix)
-        
+
         # Compute percentiles if not provided
         if sample_percentiles is None:
-            sample_end = self.sample_region_start + self.sample_region_size
-            
-            if sample_end <= matrix.shape[0]:
-                sample_region = matrix[
-                    self.sample_region_start:sample_end,
-                    self.sample_region_start:sample_end
-                ]
-                p_min, p_max = np.percentile(
-                    sample_region,
-                    (self.percentile_min, self.percentile_max)
+            if self.percentile_method == 'band':
+                # Must run before nan_to_num so bins with NaN balance weight
+                # (e.g. centromere gaps) are excluded rather than counted as
+                # zero-valued pixels. See METHOD_FIX_contrast_stretch.md §3.3.1.
+                p_min, p_max = band_percentiles(
+                    matrix,
+                    resolution=self.resolution,
+                    band_bp=self.band_bp,
+                    p_lo=self.percentile_min,
+                    p_hi=self.percentile_max
                 )
             else:
-                logger.warning(
-                    f"{chr_name}: Sample region exceeds matrix size, "
-                    f"using full matrix for percentiles"
-                )
-                p_min, p_max = np.percentile(
-                    matrix,
-                    (self.percentile_min, self.percentile_max)
-                )
+                # Legacy v1 behavior: fixed bin window, NaNs treated as zero.
+                matrix = np.nan_to_num(matrix)
+                sample_end = self.sample_region_start + self.sample_region_size
+
+                if sample_end <= matrix.shape[0]:
+                    sample_region = matrix[
+                        self.sample_region_start:sample_end,
+                        self.sample_region_start:sample_end
+                    ]
+                    p_min, p_max = np.percentile(
+                        sample_region,
+                        (self.percentile_min, self.percentile_max)
+                    )
+                else:
+                    logger.warning(
+                        f"{chr_name}: Sample region exceeds matrix size, "
+                        f"using full matrix for percentiles"
+                    )
+                    p_min, p_max = np.percentile(
+                        matrix,
+                        (self.percentile_min, self.percentile_max)
+                    )
         else:
             p_min, p_max = sample_percentiles
-        
+
+        matrix = np.nan_to_num(matrix)
+
         logger.info(
             f"{chr_name}: Percentiles ({self.percentile_min}%, {self.percentile_max}%) = "
             f"({p_min:.2f}, {p_max:.2f})"
         )
-        
-        # Contrast stretching on upper triangle
+
+        # Contrast stretching on upper triangle, with degeneration guards
         matrix = np.triu(matrix)
-        matrix_rescaled = exposure.rescale_intensity(
-            matrix,
-            in_range=(p_min, p_max)
-        ) * self.target_scale
-        
+        matrix_rescaled = self._stretch_chromosome(
+            matrix, p_min, p_max,
+            self.percentile_min, self.percentile_max,
+            self.target_scale, chr_name
+        )
+
         # Convert to sparse format with global bin IDs
         rows, cols = np.nonzero(matrix_rescaled)
+
+        # Absolute defense line: pixels must stay in the upper triangle even
+        # if an upstream guard fails (see METHOD_FIX_contrast_stretch.md §3.3.4)
+        keep = rows <= cols
+        if not keep.all():
+            logger.warning(
+                f"{chr_name}: dropping {(~keep).sum()} lower-triangle pixels "
+                f"(should not happen)"
+            )
+            rows, cols = rows[keep], cols[keep]
+
         stack = self._get_chr_stack(
             chr_list=self.chr_list,
             chr_name=chr_name,
             chrom_sizes=self.chrom_sizes,
             resolution=self.resolution
         )
-        
-        rows += stack
-        cols += stack
-        counts = matrix_rescaled[np.nonzero(matrix_rescaled)]
-        
+
+        counts = matrix_rescaled[rows, cols]
+        rows = rows + stack
+        cols = cols + stack
+
         pixels_df = pd.DataFrame({
             'bin1_id': rows,
             'bin2_id': cols,
@@ -448,9 +561,13 @@ class HiCNormalizer:
         logger.info(f"Processing {self.input_cool}")
         logger.info(f"Chromosomes: {', '.join(self.chr_list)}")
         logger.info(f"Resolution: {self.resolution}")
+        method_desc = (
+            f"band(<= {self.band_bp / 1e6:.2f} Mb)" if self.percentile_method == 'band'
+            else f"window(start={self.sample_region_start}, size={self.sample_region_size})"
+        )
         logger.info(
-            f"Contrast stretching: {self.percentile_min}%-{self.percentile_max}% "
-            f"→ [0, {self.target_scale}]"
+            f"Contrast stretching: method={self.percentile_method} {method_desc}, "
+            f"{self.percentile_min}%-{self.percentile_max}% → [0, {self.target_scale}]"
         )
         
         cooler_obj = cooler.Cooler(str(self.input_cool))

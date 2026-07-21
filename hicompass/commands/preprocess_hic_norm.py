@@ -49,6 +49,23 @@ def configure_parser(parser):
         help='Skip resolution warning for non-10kb data'
     )
     parser.add_argument(
+        '--percentile-method',
+        choices=['band', 'window'],
+        default='band',
+        help="How to determine the contrast-stretch interval. 'band' (default) "
+             "uses each chromosome's genomic-distance band and is safe across "
+             "resolutions/chromosomes; 'window' is the legacy v1 fixed-bin-window "
+             "behavior, kept only for reproducing old results (known to zero out "
+             "some chromosomes, see METHOD_FIX_contrast_stretch.md)"
+    )
+    parser.add_argument(
+        '--band-bp',
+        type=float,
+        default=2_500_000,
+        help="Genomic distance band size in bp, used when "
+             "--percentile-method=band (default: 2500000)"
+    )
+    parser.add_argument(
         '--percentile-min',
         type=float,
         default=2.0,
@@ -57,20 +74,23 @@ def configure_parser(parser):
     parser.add_argument(
         '--percentile-max',
         type=float,
-        default=98.0,
-        help='Upper percentile for contrast stretching (default: 98.0, recommended)'
+        default=99.0,
+        help='Upper percentile for contrast stretching (default: 99.0; use 98.0 '
+             'to reproduce v1 --percentile-method=window behavior)'
     )
     parser.add_argument(
         '--sample-start',
         type=int,
         default=4000,
-        help='Start bin for percentile sampling (default: 4000, recommended)'
+        help='[Deprecated, --percentile-method=window only] Start bin for '
+             'percentile sampling (default: 4000)'
     )
     parser.add_argument(
         '--sample-size',
         type=int,
         default=256,
-        help='Sample region size in bins (default: 256, recommended)'
+        help='[Deprecated, --percentile-method=window only] Sample region size '
+             'in bins (default: 256)'
     )
     parser.add_argument(
         '--no-balance',
@@ -104,6 +124,8 @@ def run(args):
             resolution=args.resolution,
             genome=args.genome,
             chrom_sizes=args.chrom_sizes,
+            percentile_method=args.percentile_method,
+            band_bp=args.band_bp,
             percentile_min=args.percentile_min,
             percentile_max=args.percentile_max,
             sample_region_start=args.sample_start,
