@@ -16,7 +16,7 @@ NAME = 'hicompass'
 EMAIL = '2247143021@qq.com'
 URL = 'https://github.com/EndeavourSyc/Hi-Compass/'
 AUTHOR = 'Yuanchen Sun'
-VERSION = '1.0.4'
+VERSION = '1.0.5'
 
 setup(
     name=NAME,
