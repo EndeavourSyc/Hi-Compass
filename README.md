@@ -29,31 +29,34 @@ The model incorporates a depth-aware module that dynamically accommodates sequen
 - Support for human (hg38), mouse (mm10), and other species (custom species require user-provided generalized CTCF data)
 - Direct output of balanced .cool files compatible with downstream analysis tools such as cooltools, HiGlass, and Juicebox
 
-- ## Installation
+## Installation
 
-  ### Step 1: Install PyTorch
+### Step 1: Install PyTorch
 
-  Hi-Compass requires PyTorch but does not install it automatically, as the correct version depends on your system and CUDA configuration.
+Hi-Compass requires PyTorch but does not install it automatically, as the correct version depends on your system and CUDA configuration.
 
-  Please install PyTorch first following the instructions at [pytorch.org](https://pytorch.org/get-started/locally/).
+Please install PyTorch first following the instructions at [pytorch.org](https://pytorch.org/get-started/locally/).
 
-  ### Step 2: Install Hi-Compass
-  ```bash
-  pip install hicompass
-  ```
+### Step 2: Install Hi-Compass
 
-  Typical installation time: ~5 minutes on a standard desktop computer.
+```bash
+pip install hicompass
+```
 
-  ### Step 3: Install training dependencies (for training only)
-  
-  If you plan to train your own models, please install the [PyTorch Lightning](https://lightning.ai/) with version that match your torch.
-  ### Step 4: Install preprocessing tools (for preprocessing only)
-  
-  The preprocessing commands require the following external tools:
-  ```bash
-  # Using conda
-  conda install -c bioconda samtools bedtools ucsc-bedgraphtobigwig
-  ```
+Typical installation time: ~5 minutes on a standard desktop computer.
+
+### Step 3: Install training dependencies (for training only)
+
+If you plan to train your own models, please install [PyTorch Lightning](https://lightning.ai/) with a version that matches your PyTorch installation.
+
+### Step 4: Install preprocessing tools (for preprocessing only)
+
+The preprocessing commands require the following external tools:
+
+```bash
+# Using conda
+conda install -c bioconda samtools bedtools ucsc-bedgraphtobigwig
+```
 
 
 
@@ -74,23 +77,25 @@ Hi-Compass requires the following input data:
 
 ### Download Pre-built Reference Data
 
-Pre-built reference data for human (hg38) are available for download:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23248958.svg)](https://doi.org/10.5281/zenodo.23248958)
+
+Pre-built reference data for human (hg38) are archived on [Zenodo](https://doi.org/10.5281/zenodo.23248958), with a mirror on our lab server:
 
 #### Required for Prediction
 
 | File               | Description                                  | Download                                                     |
 | ------------------ | -------------------------------------------- | ------------------------------------------------------------ |
-| DNA sequences      | One-hot encoded DNA sequences per chromosome | [DNA.zip](https://wulab.bjmu.edu.cn/hicompass_download/DNA.zip) |
-| Generalized CTCF   | Pan-tissue CTCF binding profile              | [CTCF.zip](https://wulab.bjmu.edu.cn/hicompass_download/CTCF.zip) |
-| Model weights      | Pre-trained Hi-Compass model                 | [model_weights.zip](https://wulab.bjmu.edu.cn/hicompass_download/model_weights.zip) |
-| Centromere regions | BED file for filtering (optional)            | [centromere.zip](https://wulab.bjmu.edu.cn/hicompass_download/centromere.zip) |
+| DNA sequences      | One-hot encoded DNA sequences per chromosome | [DNA.zip](https://zenodo.org/records/23248958/files/DNA.zip?download=1) · [DNA.zip mirror](https://wulab.bjmu.edu.cn/hicompass_download/DNA.zip) |
+| Generalized CTCF   | Pan-tissue CTCF binding profile              | [CTCF.zip](https://zenodo.org/records/23248958/files/CTCF.zip?download=1) · [CTCF.zip mirror](https://wulab.bjmu.edu.cn/hicompass_download/CTCF.zip) |
+| Model weights      | Pre-trained Hi-Compass model                 | [model_weights.zip](https://zenodo.org/records/23248958/files/model_weights.zip?download=1) · [model_weights.zip mirror](https://wulab.bjmu.edu.cn/hicompass_download/model_weights.zip) |
+| Centromere regions | BED file for filtering (optional)            | [centromere.zip](https://zenodo.org/records/23248958/files/centromere.zip?download=1) · [centromere.zip mirror](https://wulab.bjmu.edu.cn/hicompass_download/centromere.zip) |
 
 #### Required for Training Only
 
 | File         | Description                                 | Download                                                     |
 | ------------ | ------------------------------------------- | ------------------------------------------------------------ |
-| ATAC-seq BAM | Example bulk ATAC-seq data (GM12878, IMR90) | [IMR90_GM12878_ATAC_bam.zip](https://wulab.bjmu.edu.cn/hicompass_download/IMR90_GM12878_ATAC_bam.zip) |
-| Hi-C cool    | Example Hi-C matrices (GM12878, IMR90)      | [IMR90_GM12878_HiC_cool.zip](https://wulab.bjmu.edu.cn/hicompass_download/IMR90_GM12878_HiC_cool.zip) |
+| ATAC-seq BAM | Example bulk ATAC-seq data (GM12878, IMR90) | [IMR90_GM12878_ATAC_bam.zip](https://zenodo.org/records/23248958/files/IMR90_GM12878_ATAC_bam.zip?download=1) · [IMR90_GM12878_ATAC_bam.zip mirror](https://wulab.bjmu.edu.cn/hicompass_download/IMR90_GM12878_ATAC_bam.zip) |
+| Hi-C cool    | Example Hi-C matrices (GM12878, IMR90)      | [IMR90_GM12878_HiC_cool.zip](https://zenodo.org/records/23248958/files/IMR90_GM12878_HiC_cool.zip?download=1) · [IMR90_GM12878_HiC_cool.zip mirror](https://wulab.bjmu.edu.cn/hicompass_download/IMR90_GM12878_HiC_cool.zip) |
 
 Download and organize the files according to the directory structure below.
 
@@ -104,16 +109,16 @@ Hi-Compass expects data organized in the following structure for training (take 
 │       ├── GM12878~ATAC~bulk.bw
 │       ├── GM12878~ATAC~1e6.bw
 │       ├── GM12878~ATAC~5e5.bw
-│       ├── K562~ATAC~bulk.bw
-│       ├── K562~ATAC~1e6.bw
-│       └── K562~ATAC~5e5.bw
+│       ├── IMR90~ATAC~bulk.bw
+│       ├── IMR90~ATAC~1e6.bw
+│       └── IMR90~ATAC~5e5.bw
 ├── HiC/
 │   └── hg38/
 │       ├── GM12878/
 │       │   ├── chr1.npz
 │       │   ├── chr2.npz
 │       │   └── ...
-│       └── K562/
+│       └── IMR90/
 │           ├── chr1.npz
 │           ├── chr2.npz
 │           └── ...
@@ -304,7 +309,7 @@ The resulting `CTCF.bw` file contains binding probability scores ranging from 0 
 
 Place this file in your data directory:
 ```
-/your/data_root/CTCF/{genome}/CTCF.bw
+/your/data_root/CTCF/{genome}/generalized_CTCF.bw
 ```
 
 ## Training
@@ -319,16 +324,16 @@ Before training, ensure your data is organized as follows. Here we use `/home/us
 │       ├── GM12878~ATAC~bulk.bw
 │       ├── GM12878~ATAC~1e6.bw
 │       ├── GM12878~ATAC~5e5.bw
-│       ├── K562~ATAC~bulk.bw
-│       ├── K562~ATAC~1e6.bw
-│       └── K562~ATAC~5e5.bw
+│       ├── IMR90~ATAC~bulk.bw
+│       ├── IMR90~ATAC~1e6.bw
+│       └── IMR90~ATAC~5e5.bw
 ├── HiC/
 │   └── hg38/
 │       ├── GM12878/
 │       │   ├── chr1.npz
 │       │   ├── chr2.npz
 │       │   └── ...
-│       └── K562/
+│       └── IMR90/
 │           ├── chr1.npz
 │           ├── chr2.npz
 │           └── ...
@@ -350,7 +355,7 @@ Before training, ensure your data is organized as follows. Here we use `/home/us
 ```bash
 hicompass training \
     --data-root /home/user/hicompass_data \
-    --cell-type GM12878 K562 \
+    --cell-type GM12878 IMR90 \
     --train-chr 1-17 \
     --valid-chr 18-19 \
     --train-depth bulk 1e6 5e5 \
@@ -432,18 +437,18 @@ samtools view -c your_sample.bam
 
 ### Prediction with Example Data
 
-We provide a pre-processed K562 ATAC-seq BigWig file with known sequencing depth [here](https://wulab.bjmu.edu.cn/hicompass_download/k562~ATAC~8e5.bw)  for demonstration:
+We provide a pre-processed IMR90 ATAC-seq BigWig file with known sequencing depth [here](https://zenodo.org/records/23248958/files/IMR90~ATAC~8e5.zip?download=1) · [mirror](https://wulab.bjmu.edu.cn/hicompass_download/IMR90~ATAC~8e5.bw) for demonstration:
 
 ```bash
 hicompass predicting \
 		--genome hg38 \
     --model-path /path/to/hicompass_hg38.pth \
-    --atac-path /path/to/hg38/k562~ATAC~8e5.bw \
+    --atac-path /path/to/hg38/IMR90~ATAC~8e5.bw \
     --ctcf-path /path/to/hg38/generalized_CTCF.bw \
     --dna-dir /path/to/DNA/hg38 \
     --output /path/to/output/my_sample_predicted.cool \
     --centromere-bed /path/to/hg38/centromere.bed \
-    --depth 8000000 \
+    --depth 800000 \
     --chromosomes 1-22 \
     --device cuda:0
 ```
